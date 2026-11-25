@@ -1,0 +1,1430 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Personal Folio — Bookshelf & Two-Page Reader</title>
+  <style>
+    :root {
+      --bg-desk: #161514;
+      --bg-panel: #1f1d1b;
+      --bg-card: #272421;
+      --paper-left: #f7f1e3;
+      --paper-right: #f3ecdc;
+      --ink-primary: #231f1b;
+      --ink-muted: #6e655b;
+      --ui-ink: #efe9dc;
+      --ui-muted: #a69d8e;
+      --accent: #b85d3b;
+      --accent-hover: #9d4b2d;
+      --border: rgba(239, 233, 220, 0.14);
+      --spine-shadow: rgba(25, 20, 14, 0.28);
+      --font-serif: "Georgia", "Palatino Linotype", "Book Antiqua", serif;
+      --font-sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      --prose-size: 1.06rem;
+      --prose-line: 1.78;
+    }
+
+    body[data-theme="midnight"] {
+      --bg-desk: #0d0f12;
+      --bg-panel: #14181f;
+      --bg-card: #1b2029;
+      --paper-left: #171b22;
+      --paper-right: #14181f;
+      --ink-primary: #e4e7ec;
+      --ink-muted: #9aa3b2;
+      --ui-ink: #e4e7ec;
+      --ui-muted: #949dab;
+      --accent: #7c9cbf;
+      --accent-hover: #6586ab;
+      --border: rgba(228, 231, 236, 0.12);
+      --spine-shadow: rgba(0, 0, 0, 0.65);
+    }
+
+    body[data-theme="contrast"] {
+      --bg-desk: #121212;
+      --bg-panel: #1a1a1a;
+      --bg-card: #242424;
+      --paper-left: #ffffff;
+      --paper-right: #fafafa;
+      --ink-primary: #0b0b0b;
+      --ink-muted: #4a4a4a;
+      --ui-ink: #ffffff;
+      --ui-muted: #bdbdbd;
+      --accent: #8f2d1e;
+      --accent-hover: #732216;
+      --border: rgba(255, 255, 255, 0.18);
+      --spine-shadow: rgba(0, 0, 0, 0.35);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: radial-gradient(circle at top, var(--bg-panel), var(--bg-desk) 75%);
+      color: var(--ui-ink);
+      font-family: var(--font-sans);
+      line-height: 1.45;
+    }
+
+    button, input, select, textarea {
+      font-family: inherit;
+      color: inherit;
+    }
+
+    button {
+      cursor: pointer;
+      border: 1px solid var(--border);
+      background: var(--bg-card);
+      border-radius: 8px;
+      padding: 8px 13px;
+      font-size: 0.9rem;
+      transition: background 0.15s ease, transform 0.1s ease, border-color 0.15s ease;
+    }
+
+    button:hover:not(:disabled) {
+      border-color: var(--accent);
+      background: rgba(184, 93, 59, 0.14);
+    }
+
+    button:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    button.primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+      font-weight: 600;
+    }
+
+    button.primary:hover:not(:disabled) {
+      background: var(--accent-hover);
+      border-color: var(--accent-hover);
+    }
+
+    /* Top Bar */
+    .topbar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px 20px;
+      background: rgba(20, 18, 16, 0.85);
+      backdrop-filter: blur(8px);
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      z-index: 20;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-family: var(--font-serif);
+      font-size: 1.15rem;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+    }
+
+    .topbar-controls {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .topbar select, .topbar input[type="search"] {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 7px 11px;
+      font-size: 0.88rem;
+    }
+
+    /* Bookshelf View */
+    .view {
+      display: none;
+      padding: 24px 20px 48px;
+      max-width: 1240px;
+      margin: 0 auto;
+    }
+
+    .view.active {
+      display: block;
+    }
+
+    .shelf-header {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 22px;
+    }
+
+    .shelf-header h1 {
+      margin: 0;
+      font-family: var(--font-serif);
+      font-size: 1.75rem;
+      font-weight: 700;
+    }
+
+    .shelf-sub {
+      color: var(--ui-muted);
+      font-size: 0.92rem;
+    }
+
+    .bookshelf-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 22px;
+    }
+
+    .book-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: transform 0.16s ease, border-color 0.16s ease;
+    }
+
+    .book-card:hover {
+      transform: translateY(-3px);
+      border-color: var(--accent);
+    }
+
+    .book-cover-box {
+      position: relative;
+      aspect-ratio: 3 / 4;
+      width: 100%;
+      background: linear-gradient(145deg, rgba(184, 93, 59, 0.22), rgba(20, 18, 16, 0.9));
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    .book-cover-box img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .book-cover-placeholder {
+      padding: 20px;
+      text-align: center;
+      font-family: var(--font-serif);
+      color: var(--ui-ink);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .book-cover-placeholder span.cover-monogram {
+      font-size: 0.72rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--ui-muted);
+      font-family: var(--font-sans);
+    }
+
+    .book-cover-placeholder strong {
+      font-size: 1.2rem;
+      line-height: 1.25;
+    }
+
+    .book-card-body {
+      padding: 16px 18px 18px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      flex: 1;
+      gap: 14px;
+    }
+
+    .book-meta-tag {
+      font-size: 0.74rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--ui-muted);
+      margin-bottom: 6px;
+    }
+
+    .book-title {
+      margin: 0 0 4px;
+      font-family: var(--font-serif);
+      font-size: 1.22rem;
+      line-height: 1.25;
+    }
+
+    .book-author {
+      color: var(--ui-muted);
+      font-size: 0.88rem;
+      margin-bottom: 8px;
+    }
+
+    .book-notes {
+      font-size: 0.85rem;
+      color: var(--ui-muted);
+      margin: 0;
+    }
+
+    .progress-bar {
+      height: 5px;
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 999px;
+      overflow: hidden;
+      margin-top: 10px;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: var(--accent);
+      width: 0%;
+    }
+
+    .card-actions {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 6px;
+    }
+
+    .card-actions .secondary-group {
+      display: flex;
+      gap: 6px;
+    }
+
+    .card-actions button {
+      padding: 6px 10px;
+      font-size: 0.82rem;
+    }
+
+    /* Two-Page Reader Layout */
+    .reader-container {
+      max-width: 1260px;
+      margin: 0 auto;
+    }
+
+    .reader-toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 16px;
+      padding: 10px 14px;
+      background: var(--bg-panel);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+    }
+
+    .chapter-nav {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .chapter-nav select {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 7px 10px;
+      font-size: 0.9rem;
+      max-width: 280px;
+    }
+
+    .reader-tools {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .spread-wrapper {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 24px 60px var(--spine-shadow);
+      border: 1px solid rgba(0, 0, 0, 0.25);
+      position: relative;
+    }
+
+    /* Center book crease */
+    .spread-wrapper::after {
+      content: "";
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 50%;
+      width: 28px;
+      transform: translateX(-50%);
+      background: linear-gradient(
+        to right,
+        transparent,
+        rgba(0, 0, 0, 0.14) 45%,
+        rgba(0, 0, 0, 0.24) 50%,
+        rgba(0, 0, 0, 0.14) 55%,
+        transparent
+      );
+      pointer-events: none;
+    }
+
+    .page {
+      padding: 36px 40px 32px;
+      color: var(--ink-primary);
+      font-family: var(--font-serif);
+      font-size: var(--prose-size);
+      line-height: var(--prose-line);
+      min-height: 540px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .page-left {
+      background: var(--paper-left);
+      border-right: 1px solid rgba(0, 0, 0, 0.08);
+    }
+
+    .page-right {
+      background: var(--paper-right);
+    }
+
+    .page-header {
+      font-family: var(--font-sans);
+      font-size: 0.76rem;
+      text-transform: uppercase;
+      letter-spacing: 0.09em;
+      color: var(--ink-muted);
+      margin-bottom: 18px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .page-body {
+      flex: 1;
+    }
+
+    .page-body p {
+      margin: 0 0 1.05em;
+      text-indent: 1.4em;
+    }
+
+    .page-body p.lead-para {
+      text-indent: 0;
+    }
+
+    .chapter-heading {
+      font-family: var(--font-serif);
+      font-size: 1.45rem;
+      margin: 0 0 18px;
+      line-height: 1.25;
+      color: var(--ink-primary);
+    }
+
+    .page-footer {
+      font-family: var(--font-sans);
+      font-size: 0.78rem;
+      color: var(--ink-muted);
+      margin-top: 20px;
+      padding-top: 10px;
+      border-top: 1px solid rgba(128, 128, 128, 0.16);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .spread-controls {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      margin-top: 16px;
+    }
+
+    .spread-indicator {
+      font-size: 0.9rem;
+      color: var(--ui-muted);
+      min-width: 140px;
+      text-align: center;
+    }
+
+    /* Bookmarks Drawer */
+    .bookmarks-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 14px;
+      align-items: center;
+    }
+
+    .bookmark-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 5px 12px;
+      font-size: 0.82rem;
+    }
+
+    .bookmark-chip button {
+      padding: 0 4px;
+      border: none;
+      background: transparent;
+      color: var(--ui-muted);
+      font-size: 0.95rem;
+    }
+
+    /* Modal Dialog */
+    dialog {
+      background: var(--bg-panel);
+      color: var(--ui-ink);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 0;
+      max-width: 620px;
+      width: calc(100% - 28px);
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.55);
+    }
+
+    dialog::backdrop {
+      background: rgba(0, 0, 0, 0.65);
+    }
+
+    .modal-body {
+      padding: 20px 22px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .modal-body h2 {
+      margin: 0;
+      font-family: var(--font-serif);
+      font-size: 1.35rem;
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .field label {
+      font-size: 0.84rem;
+      color: var(--ui-muted);
+    }
+
+    .field input, .field textarea, .field select {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 9px 11px;
+      font-size: 0.92rem;
+    }
+
+    .field textarea {
+      min-height: 150px;
+      resize: vertical;
+      line-height: 1.5;
+    }
+
+    .cover-preview-box {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 10px;
+      border: 1px dashed var(--border);
+      border-radius: 10px;
+      background: var(--bg-card);
+    }
+
+    .cover-preview-box img {
+      width: 66px;
+      height: 88px;
+      object-fit: cover;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+    }
+
+    .modal-footer {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      padding: 14px 22px;
+      border-top: 1px solid var(--border);
+    }
+
+    @media (max-width: 860px) {
+      .spread-wrapper {
+        grid-template-columns: 1fr;
+      }
+      .spread-wrapper::after {
+        display: none;
+      }
+      .page-left {
+        border-right: none;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+      }
+      .page {
+        padding: 24px 20px;
+        min-height: 360px;
+      }
+    }
+  </style>
+</head>
+<body data-theme="paper">
+  <header class="topbar">
+    <div class="brand">
+      <span>Folio</span>
+      <span class="shelf-sub" style="font-family: var(--font-sans); font-size: 0.82rem;">Personal Book Reader</span>
+    </div>
+    <div class="topbar-controls">
+      <input type="search" id="searchInput" placeholder="Search title or author..." aria-label="Search novels" />
+      <select id="themeSelect" aria-label="Reading theme">
+        <option value="paper">Warm Paper</option>
+        <option value="midnight">Midnight</option>
+        <option value="contrast">High Contrast</option>
+      </select>
+      <button id="fontSmallerBtn" title="Decrease text size">A-</button>
+      <button id="fontLargerBtn" title="Increase text size">A+</button>
+      <button class="primary" id="openNewNovelBtn">+ New Novel</button>
+    </div>
+  </header>
+
+  <!-- BOOKSHELF VIEW -->
+  <main id="bookshelfView" class="view active">
+    <div class="shelf-header">
+      <div>
+        <h1>Your Bookshelf</h1>
+        <div class="shelf-sub" id="shelfCountLabel">Loading library...</div>
+      </div>
+      <div style="display:flex; gap:8px;">
+        <button id="exportLibraryBtn">Export JSON</button>
+        <button id="importLibraryBtn">Import JSON</button>
+        <input type="file" id="importFileInput" accept="application/json" hidden />
+      </div>
+    </div>
+    <div class="bookshelf-grid" id="bookshelfGrid"></div>
+  </main>
+
+  <!-- TWO-PAGE READER VIEW -->
+  <section id="readerView" class="view">
+    <div class="reader-container">
+      <div class="reader-toolbar">
+        <div class="chapter-nav">
+          <button id="backToShelfBtn">&larr; Bookshelf</button>
+          <select id="chapterSelect" aria-label="Select chapter"></select>
+          <button id="prevChapterBtn" title="Previous chapter">&lsaquo; Prev Ch.</button>
+          <button id="nextChapterBtn" title="Next chapter">Next Ch. &rsaquo;</button>
+        </div>
+        <div class="reader-tools">
+          <button id="toggleBookmarkBtn">Bookmark Spread</button>
+          <button id="addChapterBtn">+ Add Chapter</button>
+        </div>
+      </div>
+
+      <div class="spread-wrapper" id="spreadWrapper">
+        <article class="page page-left" id="leftPage"></article>
+        <article class="page page-right" id="rightPage"></article>
+      </div>
+
+      <div class="spread-controls">
+        <button id="prevSpreadBtn">&larr; Previous Pages</button>
+        <div class="spread-indicator" id="spreadIndicator">Spread 1 of 1</div>
+        <button id="nextSpreadBtn">Next Pages &rarr;</button>
+      </div>
+
+      <div class="bookmarks-bar" id="bookmarksBar"></div>
+    </div>
+  </section>
+
+  <!-- ADD NOVEL MODAL -->
+  <dialog id="novelModal">
+    <form method="dialog" id="novelForm">
+      <div class="modal-body">
+        <h2>Add a Novel to Your Shelf</h2>
+        <div class="field">
+          <label for="novelTitleInput">Title</label>
+          <input id="novelTitleInput" required placeholder="e.g., The King Has Donkey Ears" />
+        </div>
+        <div class="field">
+          <label for="novelAuthorInput">Author / Note (optional)</label>
+          <input id="novelAuthorInput" placeholder="e.g., Private Edition" />
+        </div>
+        <div class="field">
+          <label for="newCoverFileInput">Cover Image (upload from device)</label>
+          <input type="file" id="newCoverFileInput" accept="image/*" />
+          <div class="cover-preview-box" id="newCoverPreviewBox" style="display:none;">
+            <img id="newCoverPreviewImg" alt="Cover preview" />
+            <span class="shelf-sub" id="newCoverPreviewLabel">Cover selected</span>
+          </div>
+        </div>
+        <div class="field">
+          <label for="firstChapterTitleInput">First Chapter Heading</label>
+          <input id="firstChapterTitleInput" value="Chapter 1" />
+        </div>
+        <div class="field">
+          <label for="firstChapterTextInput">Chapter Text (paste paragraphs; blank lines separate paragraphs)</label>
+          <textarea id="firstChapterTextInput" required placeholder="Paste chapter text here..."></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" id="cancelNovelBtn">Cancel</button>
+        <button type="submit" class="primary">Save &amp; Open</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- EDIT COVER MODAL -->
+  <dialog id="coverModal">
+    <form method="dialog" id="coverForm">
+      <div class="modal-body">
+        <h2 id="coverModalTitle">Edit Book Cover</h2>
+        <div class="field">
+          <label for="editCoverFileInput">Upload Image From Your Computer</label>
+          <input type="file" id="editCoverFileInput" accept="image/*" />
+        </div>
+        <div class="field">
+          <label for="editCoverUrlInput">Or Paste an Image URL</label>
+          <input type="url" id="editCoverUrlInput" placeholder="https://example.com/cover.jpg" />
+        </div>
+        <div class="cover-preview-box">
+          <img id="editCoverPreviewImg" src="" alt="Book cover preview" style="display:none;" />
+          <span class="shelf-sub" id="editCoverStatusText">No custom cover set yet.</span>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" id="removeCoverBtn">Remove Cover</button>
+        <button type="button" id="cancelCoverBtn">Cancel</button>
+        <button type="submit" class="primary">Save Cover</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- ADD CHAPTER MODAL -->
+  <dialog id="chapterModal">
+    <form method="dialog" id="chapterForm">
+      <div class="modal-body">
+        <h2>Add Chapter</h2>
+        <div class="field">
+          <label for="newChapterTitleInput">Chapter Heading</label>
+          <input id="newChapterTitleInput" required placeholder="e.g., Chapter 2" />
+        </div>
+        <div class="field">
+          <label for="newChapterTextInput">Chapter Text</label>
+          <textarea id="newChapterTextInput" required placeholder="Paste chapter text here..."></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" id="cancelChapterBtn">Cancel</button>
+        <button type="submit" class="primary">Add Chapter</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script>
+    const STORAGE_KEY = "folio_personal_library_v1";
+
+    const DEFAULT_LIBRARY = [
+      {
+        id: "sample-donkey-ears",
+        title: "The King Has Donkey Ears",
+        author: "Personal Collection",
+        notes: "Two-page book layout with chapter switching, bookmarks, and custom covers.",
+        cover: "",
+        currentChapterIndex: 0,
+        currentSpreadIndex: 0,
+        bookmarks: [],
+        chapters: [
+          {
+            title: "Chapter 1 — The Secret Beneath the Crown",
+            text: `In a quiet kingdom ringed by terraced hills and mist, the young ruler wore a tall velvet cap on every occasion—even in the middle of high summer.\n\nOnly the court barber knew why the cap never left the royal brow. Beneath the embroidered brim lay a pair of unmistakable donkey ears, soft and twitching whenever palace rumors grew loud.\n\nFor months, the barber kept his oath of silence. Yet secrets carried in the chest grow heavy with the seasons, pressing against every word spoken in the market square.\n\nOne evening, walking past the edge of the wheat fields where the wind bent the stalks in long silver waves, the barber stopped beside a deep hollow in the earth.\n\nHe knelt, leaned close to the soil, and whispered the truth into the dark ground, covering the spot carefully with loose earth before heading home.`
+          },
+          {
+            title: "Chapter 2 — Whispers in the Reeds",
+            text: `Spring arrived early that year, bringing green shoots along the stream bank and tall reeds that swayed with every gust from the valley.\n\nWhen the royal musicians cut stalks to carve new flutes for the festival, a strange murmur drifted from the instruments the moment breath met reed.\n\nAt first, the court thought the wind was playing tricks through the lattice windows. Soon, however, the melody carried unmistakable words that echoed across the courtyard.\n\nThe king listened in silence as the music ended, realizing that a secret buried in haste rarely stays hidden forever.`
+          }
+        ]
+      }
+    ];
+
+    let state = {
+      library: [],
+      activeNovelId: null,
+      editingCoverNovelId: null,
+      draftNewCover: "",
+      draftEditCover: "",
+      view: "bookshelf",
+      fontScale: 1.06,
+      theme: "paper",
+      searchQuery: "",
+      spreads: []
+    };
+
+    function sanitizeMetadataText(str, fallback = "") {
+      if (!str || typeof str !== "string") return fallback;
+      let cleaned = str
+        .replace(/mydramanovel\s*·?\s*imported/gi, "")
+        .replace(/mydramanovel\.com\S*/gi, "")
+        .replace(/mydramanovel/gi, "")
+        .replace(/imported\s+from\s+\S+/gi, "")
+        .replace(/^[\s·•\-–—|]+|[\s·•\-–—|]+$/g, "")
+        .replace(/\s{2,}/g, " ")
+        .trim();
+      return cleaned || fallback;
+    }
+
+    function normalizeBook(book) {
+      return {
+        ...book,
+        id: book.id || ("book-" + Date.now() + "-" + Math.random().toString(36).slice(2, 6)),
+        title: sanitizeMetadataText(book.title, "Untitled Novel"),
+        author: sanitizeMetadataText(book.author, "Personal Collection"),
+        notes: sanitizeMetadataText(book.notes, ""),
+        cover: typeof book.cover === "string" ? book.cover : "",
+        currentChapterIndex: book.currentChapterIndex || 0,
+        currentSpreadIndex: book.currentSpreadIndex || 0,
+        bookmarks: Array.isArray(book.bookmarks) ? book.bookmarks : [],
+        chapters: Array.isArray(book.chapters) ? book.chapters : []
+      };
+    }
+
+    function loadState() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed.library) && parsed.library.length > 0) {
+            state.library = parsed.library.map(normalizeBook);
+            state.fontScale = parsed.fontScale || 1.06;
+            state.theme = parsed.theme || "paper";
+            saveState();
+            return;
+          }
+        }
+      } catch (err) {
+        console.warn("Could not load saved library:", err);
+      }
+      state.library = structuredClone(DEFAULT_LIBRARY);
+      saveState();
+    }
+
+    function saveState() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({
+          library: state.library,
+          fontScale: state.fontScale,
+          theme: state.theme
+        }));
+      } catch (err) {
+        alert("Storage limit reached (often from large cover images). Try a smaller image file or an image URL.");
+      }
+    }
+
+    function getActiveNovel() {
+      return state.library.find((b) => b.id === state.activeNovelId) || null;
+    }
+
+    function applyAppearance() {
+      document.body.setAttribute("data-theme", state.theme);
+      document.documentElement.style.setProperty("--prose-size", `${state.fontScale}rem`);
+      document.getElementById("themeSelect").value = state.theme;
+    }
+
+    function escapeHtml(str) {
+      return String(str || "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;");
+    }
+
+    function parseParagraphs(text) {
+      return String(text || "")
+        .split(/\n\s*\n/)
+        .map((p) => p.trim())
+        .filter(Boolean);
+    }
+
+    /* Image Compression for localStorage */
+    function readImageFileAsDataUrl(file, maxWidth = 520, quality = 0.82) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const img = new Image();
+          img.onload = () => {
+            const scale = img.width > maxWidth ? maxWidth / img.width : 1;
+            const canvas = document.createElement("canvas");
+            canvas.width = Math.max(1, Math.round(img.width * scale));
+            canvas.height = Math.max(1, Math.round(img.height * scale));
+            const ctx = canvas.getContext("2d");
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            resolve(canvas.toDataURL("image/jpeg", quality));
+          };
+          img.onerror = reject;
+          img.src = reader.result;
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    }
+
+    /* Bookshelf Rendering */
+    function renderBookshelf() {
+      document.getElementById("bookshelfView").classList.add("active");
+      document.getElementById("readerView").classList.remove("active");
+
+      const q = state.searchQuery.trim().toLowerCase();
+      const filtered = state.library.filter((book) =>
+        !q ||
+        book.title.toLowerCase().includes(q) ||
+        (book.author && book.author.toLowerCase().includes(q))
+      );
+
+      document.getElementById("shelfCountLabel").textContent =
+        `${filtered.length} ${filtered.length === 1 ? "novel" : "novels"} on your shelf`;
+
+      const grid = document.getElementById("bookshelfGrid");
+      if (filtered.length === 0) {
+        grid.innerHTML = `<p class="shelf-sub">No matching novels. Click <strong>+ New Novel</strong> to add one.</p>`;
+        return;
+      }
+
+      grid.innerHTML = filtered.map((rawBook) => {
+        const book = normalizeBook(rawBook);
+        const totalCh = Math.max(book.chapters.length, 1);
+        const pct = Math.min(100, Math.round(((book.currentChapterIndex + 1) / totalCh) * 100));
+        const coverHtml = book.cover
+          ? `<img src="${escapeHtml(book.cover)}" alt="${escapeHtml(book.title)} cover" />`
+          : `<div class="book-cover-placeholder">
+               <span class="cover-monogram">No Cover Yet</span>
+               <strong>${escapeHtml(book.title)}</strong>
+             </div>`;
+
+        return `
+          <div class="book-card">
+            <div class="book-cover-box" onclick="openCoverModal('${book.id}')" title="Click to set or change cover image" style="cursor:pointer;">
+              ${coverHtml}
+            </div>
+            <div class="book-card-body">
+              <div>
+                <div class="book-meta-tag">${book.chapters.length} ${book.chapters.length === 1 ? "Chapter" : "Chapters"} · ${book.bookmarks.length} Bookmarks</div>
+                <h2 class="book-title">${escapeHtml(book.title)}</h2>
+                <div class="book-author">${escapeHtml(book.author)}</div>
+                ${book.notes ? `<p class="book-notes">${escapeHtml(book.notes)}</p>` : ""}
+                <div class="progress-bar" title="${pct}% through chapters">
+                  <div class="progress-fill" style="width:${pct}%"></div>
+                </div>
+              </div>
+              <div class="card-actions">
+                <button class="primary" onclick="openNovel('${book.id}')">Open Book</button>
+                <div class="secondary-group">
+                  <button onclick="openCoverModal('${book.id}')" title="Set or change cover">Cover</button>
+                  <button onclick="deleteNovel('${book.id}')" title="Remove novel">Remove</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join("");
+    }
+
+    function openNovel(novelId) {
+      const novel = state.library.find((b) => b.id === novelId);
+      if (!novel) return;
+      state.activeNovelId = novelId;
+      state.view = "reader";
+      document.getElementById("bookshelfView").classList.remove("active");
+      document.getElementById("readerView").classList.add("active");
+      renderReader();
+    }
+
+    function deleteNovel(novelId) {
+      state.library = state.library.filter((b) => b.id !== novelId);
+      if (state.activeNovelId === novelId) {
+        state.activeNovelId = null;
+      }
+      saveState();
+      renderBookshelf();
+    }
+
+    /* Cover Editor Modal */
+    const coverModal = document.getElementById("coverModal");
+
+    function updateEditCoverPreview() {
+      const img = document.getElementById("editCoverPreviewImg");
+      const status = document.getElementById("editCoverStatusText");
+      if (state.draftEditCover) {
+        img.src = state.draftEditCover;
+        img.style.display = "block";
+        status.textContent = "Cover ready to save.";
+      } else {
+        img.removeAttribute("src");
+        img.style.display = "none";
+        status.textContent = "No cover image set.";
+      }
+    }
+
+    function openCoverModal(novelId) {
+      const novel = state.library.find((b) => b.id === novelId);
+      if (!novel) return;
+      state.editingCoverNovelId = novelId;
+      state.draftEditCover = novel.cover || "";
+      document.getElementById("coverModalTitle").textContent = `Cover — ${novel.title}`;
+      document.getElementById("editCoverFileInput").value = "";
+      document.getElementById("editCoverUrlInput").value =
+        novel.cover && !novel.cover.startsWith("data:") ? novel.cover : "";
+      updateEditCoverPreview();
+      coverModal.showModal();
+    }
+
+    document.getElementById("editCoverFileInput").addEventListener("change", async (e) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      try {
+        state.draftEditCover = await readImageFileAsDataUrl(file);
+        document.getElementById("editCoverUrlInput").value = "";
+        updateEditCoverPreview();
+      } catch {
+        alert("Could not load that image file.");
+      }
+    });
+
+    document.getElementById("editCoverUrlInput").addEventListener("input", (e) => {
+      const val = e.target.value.trim();
+      if (val) {
+        state.draftEditCover = val;
+        updateEditCoverPreview();
+      }
+    });
+
+    document.getElementById("removeCoverBtn").addEventListener("click", () => {
+      state.draftEditCover = "";
+      document.getElementById("editCoverFileInput").value = "";
+      document.getElementById("editCoverUrlInput").value = "";
+      updateEditCoverPreview();
+    });
+
+    document.getElementById("cancelCoverBtn").addEventListener("click", () => {
+      state.editingCoverNovelId = null;
+      coverModal.close();
+    });
+
+    document.getElementById("coverForm").addEventListener("submit", (e) => {
+      e.preventDefault();
+      const novel = state.library.find((b) => b.id === state.editingCoverNovelId);
+      if (!novel) return;
+      const urlVal = document.getElementById("editCoverUrlInput").value.trim();
+      novel.cover = urlVal || state.draftEditCover || "";
+      saveState();
+      coverModal.close();
+      state.editingCoverNovelId = null;
+      renderBookshelf();
+    });
+
+    /* Two-Page Spread Pagination */
+    function buildSpreadsForChapter(chapter) {
+      const paragraphs = parseParagraphs(chapter.text || "");
+      if (paragraphs.length === 0) {
+        return [{ left: ["(This chapter has no text yet.)"], right: [] }];
+      }
+
+      const perPageChars = Math.max(420, Math.round(920 / state.fontScale));
+      const pages = [];
+      let currentPage = [];
+      let currentChars = 0;
+
+      for (const para of paragraphs) {
+        if (currentChars + para.length > perPageChars && currentPage.length > 0) {
+          pages.push(currentPage);
+          currentPage = [para];
+          currentChars = para.length;
+        } else {
+          currentPage.push(para);
+          currentChars += para.length;
+        }
+      }
+      if (currentPage.length > 0) {
+        pages.push(currentPage);
+      }
+
+      const spreads = [];
+      for (let i = 0; i < pages.length; i += 2) {
+        spreads.push({
+          left: pages[i] || [],
+          right: pages[i + 1] || []
+        });
+      }
+      return spreads;
+    }
+
+    function renderReader() {
+      const novel = getActiveNovel();
+      if (!novel) {
+        renderBookshelf();
+        return;
+      }
+
+      if (!novel.chapters || novel.chapters.length === 0) {
+        novel.chapters = [{ title: "Chapter 1", text: "Add text to begin reading." }];
+      }
+
+      const chIdx = Math.max(0, Math.min(novel.currentChapterIndex || 0, novel.chapters.length - 1));
+      novel.currentChapterIndex = chIdx;
+      const chapter = novel.chapters[chIdx];
+
+      const chSelect = document.getElementById("chapterSelect");
+      chSelect.innerHTML = novel.chapters
+        .map((ch, idx) => `<option value="${idx}" ${idx === chIdx ? "selected" : ""}>${escapeHtml(ch.title || `Chapter ${idx + 1}`)}</option>`)
+        .join("");
+
+      state.spreads = buildSpreadsForChapter(chapter);
+      const spIdx = Math.max(0, Math.min(novel.currentSpreadIndex || 0, state.spreads.length - 1));
+      novel.currentSpreadIndex = spIdx;
+      saveState();
+
+      const spread = state.spreads[spIdx];
+      const leftPageNum = spIdx * 2 + 1;
+      const rightPageNum = spIdx * 2 + 2;
+
+      const leftHtml = spread.left
+        .map((p, i) => `<p class="${spIdx === 0 && i === 0 ? "lead-para" : ""}">${escapeHtml(p)}</p>`)
+        .join("");
+
+      const rightHtml = spread.right
+        .map((p) => `<p>${escapeHtml(p)}</p>`)
+        .join("");
+
+      document.getElementById("leftPage").innerHTML = `
+        <div>
+          <div class="page-header">
+            <span>${escapeHtml(novel.title)}</span>
+            <span>${escapeHtml(chapter.title)}</span>
+          </div>
+          ${spIdx === 0 ? `<h1 class="chapter-heading">${escapeHtml(chapter.title)}</h1>` : ""}
+          <div class="page-body">${leftHtml}</div>
+        </div>
+        <div class="page-footer">
+          <span>Left Page</span>
+          <span>p. ${leftPageNum}</span>
+        </div>
+      `;
+
+      document.getElementById("rightPage").innerHTML = `
+        <div>
+          <div class="page-header">
+            <span>Chapter ${chIdx + 1} of ${novel.chapters.length}</span>
+            <span>Spread ${spIdx + 1} / ${state.spreads.length}</span>
+          </div>
+          <div class="page-body">${rightHtml || `<p class="lead-para" style="color:var(--ink-muted); font-style:italic;">End of this chapter's spread.</p>`}</div>
+        </div>
+        <div class="page-footer">
+          <span>Right Page</span>
+          <span>${spread.right.length ? `p. ${rightPageNum}` : ""}</span>
+        </div>
+      `;
+
+      document.getElementById("spreadIndicator").textContent = `Spread ${spIdx + 1} of ${state.spreads.length}`;
+      document.getElementById("prevSpreadBtn").disabled = spIdx === 0;
+      document.getElementById("nextSpreadBtn").disabled = spIdx >= state.spreads.length - 1;
+      document.getElementById("prevChapterBtn").disabled = chIdx === 0;
+      document.getElementById("nextChapterBtn").disabled = chIdx >= novel.chapters.length - 1;
+
+      renderBookmarks(novel);
+    }
+
+    function renderBookmarks(novel) {
+      const bar = document.getElementById("bookmarksBar");
+      if (!novel.bookmarks || novel.bookmarks.length === 0) {
+        bar.innerHTML = `<span class="shelf-sub">No bookmarks in this novel yet.</span>`;
+        return;
+      }
+
+      bar.innerHTML = `<span class="shelf-sub">Bookmarks:</span>` + novel.bookmarks.map((bm, i) => `
+        <span class="bookmark-chip">
+          <a href="#" onclick="jumpToBookmark(${i}); return false;" style="color:inherit; text-decoration:none;">
+            ${escapeHtml(bm.label)}
+          </a>
+          <button onclick="removeBookmark(${i})" title="Delete bookmark">&times;</button>
+        </span>
+      `).join("");
+    }
+
+    function jumpToBookmark(index) {
+      const novel = getActiveNovel();
+      if (!novel || !novel.bookmarks[index]) return;
+      const bm = novel.bookmarks[index];
+      novel.currentChapterIndex = bm.chapterIndex;
+      novel.currentSpreadIndex = bm.spreadIndex;
+      saveState();
+      renderReader();
+    }
+
+    function removeBookmark(index) {
+      const novel = getActiveNovel();
+      if (!novel) return;
+      novel.bookmarks.splice(index, 1);
+      saveState();
+      renderBookmarks(novel);
+    }
+
+    /* Event Wiring */
+    document.getElementById("backToShelfBtn").addEventListener("click", () => {
+      state.view = "bookshelf";
+      renderBookshelf();
+    });
+
+    document.getElementById("chapterSelect").addEventListener("change", (e) => {
+      const novel = getActiveNovel();
+      if (!novel) return;
+      novel.currentChapterIndex = Number(e.target.value);
+      novel.currentSpreadIndex = 0;
+      renderReader();
+    });
+
+    document.getElementById("prevChapterBtn").addEventListener("click", () => {
+      const novel = getActiveNovel();
+      if (!novel || novel.currentChapterIndex <= 0) return;
+      novel.currentChapterIndex -= 1;
+      novel.currentSpreadIndex = 0;
+      renderReader();
+    });
+
+    document.getElementById("nextChapterBtn").addEventListener("click", () => {
+      const novel = getActiveNovel();
+      if (!novel || novel.currentChapterIndex >= novel.chapters.length - 1) return;
+      novel.currentChapterIndex += 1;
+      novel.currentSpreadIndex = 0;
+      renderReader();
+    });
+
+    document.getElementById("prevSpreadBtn").addEventListener("click", () => {
+      const novel = getActiveNovel();
+      if (!novel || novel.currentSpreadIndex <= 0) return;
+      novel.currentSpreadIndex -= 1;
+      renderReader();
+    });
+
+    document.getElementById("nextSpreadBtn").addEventListener("click", () => {
+      const novel = getActiveNovel();
+      if (!novel || novel.currentSpreadIndex >= state.spreads.length - 1) return;
+      novel.currentSpreadIndex += 1;
+      renderReader();
+    });
+
+    document.getElementById("toggleBookmarkBtn").addEventListener("click", () => {
+      const novel = getActiveNovel();
+      if (!novel) return;
+      const chIdx = novel.currentChapterIndex;
+      const spIdx = novel.currentSpreadIndex;
+      const exists = novel.bookmarks.some((b) => b.chapterIndex === chIdx && b.spreadIndex === spIdx);
+      if (!exists) {
+        novel.bookmarks.push({
+          chapterIndex: chIdx,
+          spreadIndex: spIdx,
+          label: `Ch. ${chIdx + 1} · Spread ${spIdx + 1}`
+        });
+        saveState();
+        renderBookmarks(novel);
+      }
+    });
+
+    document.getElementById("themeSelect").addEventListener("change", (e) => {
+      state.theme = e.target.value;
+      saveState();
+      applyAppearance();
+      if (state.view === "reader") renderReader();
+    });
+
+    document.getElementById("fontSmallerBtn").addEventListener("click", () => {
+      state.fontScale = Math.max(0.85, Number((state.fontScale - 0.08).toFixed(2)));
+      saveState();
+      applyAppearance();
+      if (state.view === "reader") renderReader();
+    });
+
+    document.getElementById("fontLargerBtn").addEventListener("click", () => {
+      state.fontScale = Math.min(1.45, Number((state.fontScale + 0.08).toFixed(2)));
+      saveState();
+      applyAppearance();
+      if (state.view === "reader") renderReader();
+    });
+
+    document.getElementById("searchInput").addEventListener("input", (e) => {
+      state.searchQuery = e.target.value;
+      if (state.view === "bookshelf") renderBookshelf();
+    });
+
+    /* New Novel Modal */
+    const novelModal = document.getElementById("novelModal");
+    document.getElementById("openNewNovelBtn").addEventListener("click", () => {
+      document.getElementById("novelForm").reset();
+      document.getElementById("firstChapterTitleInput").value = "Chapter 1";
+      state.draftNewCover = "";
+      document.getElementById("newCoverPreviewBox").style.display = "none";
+      novelModal.showModal();
+    });
+
+    document.getElementById("newCoverFileInput").addEventListener("change", async (e) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      try {
+        state.draftNewCover = await readImageFileAsDataUrl(file);
+        document.getElementById("newCoverPreviewImg").src = state.draftNewCover;
+        document.getElementById("newCoverPreviewLabel").textContent = file.name;
+        document.getElementById("newCoverPreviewBox").style.display = "flex";
+      } catch {
+        alert("Could not load that cover image.");
+      }
+    });
+
+    document.getElementById("cancelNovelBtn").addEventListener("click", () => {
+      novelModal.close();
+    });
+
+    document.getElementById("novelForm").addEventListener("submit", (e) => {
+      e.preventDefault();
+      const title = sanitizeMetadataText(document.getElementById("novelTitleInput").value, "");
+      const author = sanitizeMetadataText(document.getElementById("novelAuthorInput").value, "Personal Collection");
+      const chTitle = document.getElementById("firstChapterTitleInput").value.trim() || "Chapter 1";
+      const chText = document.getElementById("firstChapterTextInput").value.trim();
+      if (!title || !chText) return;
+
+      const newBook = normalizeBook({
+        id: "book-" + Date.now(),
+        title,
+        author,
+        notes: "",
+        cover: state.draftNewCover || "",
+        currentChapterIndex: 0,
+        currentSpreadIndex: 0,
+        bookmarks: [],
+        chapters: [{ title: chTitle, text: chText }]
+      });
+
+      state.library.unshift(newBook);
+      saveState();
+      novelModal.close();
+      openNovel(newBook.id);
+    });
+
+    /* Add Chapter Modal */
+    const chapterModal = document.getElementById("chapterModal");
+    document.getElementById("addChapterBtn").addEventListener("click", () => {
+      const novel = getActiveNovel();
+      if (!novel) return;
+      document.getElementById("chapterForm").reset();
+      document.getElementById("newChapterTitleInput").value = `Chapter ${novel.chapters.length + 1}`;
+      chapterModal.showModal();
+    });
+
+    document.getElementById("cancelChapterBtn").addEventListener("click", () => {
+      chapterModal.close();
+    });
+
+    document.getElementById("chapterForm").addEventListener("submit", (e) => {
+      e.preventDefault();
+      const novel = getActiveNovel();
+      if (!novel) return;
+      const chTitle = document.getElementById("newChapterTitleInput").value.trim();
+      const chText = document.getElementById("newChapterTextInput").value.trim();
+      if (!chTitle || !chText) return;
+
+      novel.chapters.push({ title: chTitle, text: chText });
+      novel.currentChapterIndex = novel.chapters.length - 1;
+      novel.currentSpreadIndex = 0;
+      saveState();
+      chapterModal.close();
+      renderReader();
+    });
+
+    /* Export / Merge-Import JSON */
+    document.getElementById("exportLibraryBtn").addEventListener("click", () => {
+      const blob = new Blob([JSON.stringify(state.library, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "my-personal-bookshelf.json";
+      a.click();
+      URL.revokeObjectURL(url);
+    });
+
+    document.getElementById("importLibraryBtn").addEventListener("click", () => {
+      document.getElementById("importFileInput").click();
+    });
+
+    document.getElementById("importFileInput").addEventListener("change", async (e) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      try {
+        const text = await file.text();
+        const imported = JSON.parse(text);
+        const incomingBooks = Array.isArray(imported)
+          ? imported
+          : (imported && typeof imported === "object" && imported.title ? [imported] : []);
+
+        if (incomingBooks.length > 0) {
+          const byTitle = new Map(
+            state.library.map((b) => [(b.title || "").trim().toLowerCase(), normalizeBook(b)])
+          );
+
+          for (const rawBook of incomingBooks) {
+            const normalized = normalizeBook(rawBook);
+            const existing = byTitle.get(normalized.title.trim().toLowerCase());
+            if (existing && !normalized.cover && existing.cover) {
+              normalized.cover = existing.cover;
+            }
+            byTitle.set(normalized.title.trim().toLowerCase() || normalized.id, normalized);
+          }
+
+          state.library = Array.from(byTitle.values());
+          saveState();
+          renderBookshelf();
+        } else {
+          alert("That JSON file didn't contain any novel entries.");
+        }
+      } catch (err) {
+        alert("Could not import that JSON file.");
+      }
+      e.target.value = "";
+    });
+
+    /* Keyboard navigation inside reader */
+    document.addEventListener("keydown", (e) => {
+      if (state.view !== "reader" || novelModal.open || chapterModal.open || coverModal.open) return;
+      if (["INPUT", "TEXTAREA", "SELECT"].includes(document.activeElement.tagName)) return;
+      if (e.key === "ArrowRight") {
+        document.getElementById("nextSpreadBtn").click();
+      } else if (e.key === "ArrowLeft") {
+        document.getElementById("prevSpreadBtn").click();
+      }
+    });
+
+    loadState();
+    applyAppearance();
+    renderBookshelf();
+  </script>
+</body>
+</html>
